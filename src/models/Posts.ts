@@ -1,13 +1,14 @@
 import { Document, model, Schema } from 'mongoose';
-import { UserDataInterface } from './Users'
+import { UserModelInterface } from './Users'
 
-interface PostDataInterface extends Document {
+export interface PostModelInterface extends Document {
   description: string;
   image: string;
+  likes: Schema.Types.ObjectId[];
   created_at: string;
-  created_by: UserDataInterface;
+  created_by: UserModelInterface;
   updated_at: string;
-  updated_by: UserDataInterface;
+  updated_by: UserModelInterface;
 }
 
 const PostsSchema = new Schema({
@@ -19,6 +20,13 @@ const PostsSchema = new Schema({
     type: String,
     required: true,
   },
+  likes: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Users',
+      required: true,
+    },
+  ],
   created_at: {
     type: Date,
     default: new Date(),
@@ -39,4 +47,4 @@ const PostsSchema = new Schema({
   },
 })
 
-export default model<PostDataInterface>('Posts', PostsSchema)
+export default model<PostModelInterface>('Posts', PostsSchema)

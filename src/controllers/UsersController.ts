@@ -1,6 +1,9 @@
 import Users from '../models/Users';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken';
+
+const { JWT_SESSION_KEY, JWT_SESSION_LIFETIME } = process.env
 
 /**
  * Return post by id
@@ -64,7 +67,7 @@ interface StoreRequestInterface extends Request {
     user: string,
     biography?: string,
     password: string,
-    confirm_password: string,
+    password_confirmation: string,
   },
 }
 
@@ -73,12 +76,26 @@ const store = async (
   response: Response
 ): Promise<Response> => {
   try {
-    const { name, user, biography = '', password, confirm_password } = request.body
+    const { name, user, biography = '', password, password_confirmation } = request.body
 
-    if(password !== confirm_password) {
-      return response.status(422).json({ 
-        confirm_password: 'Password must be the same as confirm password' 
-      })
+    const userIsAvailable = await Users.findOne({ user })
+
+    if(userIsAvailable) {
+      return response.status(422).json([
+        { 
+          field: 'user',
+          message: 'User already used' 
+        }
+      ]);
+    }
+
+    if(password !== password_confirmation) {
+      return response.status(422).json([
+        {       
+          field: 'password_confirmation',    
+          message: 'Passwords must match' 
+        }
+      ]);
     }
 
     const hash = await bcrypt.hash(password, 8)
@@ -91,8 +108,13 @@ const store = async (
     })
 
     delete newUser.password
+
+    // Creating the token 
+    const token = 'Bearer ' + jwt.sign({ id: newUser._id }, JWT_SESSION_KEY, {
+      expiresIn: JWT_SESSION_LIFETIME
+    });
     
-    return response.status(201).json(newUser);
+    return response.status(201).json({ token, user: newUser });
   } catch (error) {
     return response.status(500).json(error);
   }

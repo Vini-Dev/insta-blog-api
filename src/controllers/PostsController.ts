@@ -20,7 +20,7 @@ const index = async (
     const post = await Posts.findById(id).populate('created_by')
 
     if(!post)
-      return response.status(404).send();;  
+      return response.status(404).send();
 
     return response.status(200).json(post);
   } catch (error) {
@@ -32,12 +32,31 @@ const index = async (
 /**
  * List all posts
  */
+interface ListRequestInterface extends Request {
+  query: {
+    myLikes?: 'true';
+  };
+  body: {
+    session: {
+      id: string;
+    };
+  };
+}
 const list = async (
-  request: Request,
+  request: ListRequestInterface,
   response: Response
 ): Promise<Response> => {
   try {
-    const posts = await Posts.find().sort({ created_at: -1 }).populate('created_by')
+    const { myLikes } = request.query
+    const { session } = request.body
+
+    const query = {};
+
+    if(myLikes === 'true') {
+      query['likes'] = session.id;
+    }
+
+    const posts = await Posts.find(query).sort({ created_at: -1 }).populate('created_by')
     
     return response.status(200).json(posts);
   } catch (error) {    
@@ -131,7 +150,75 @@ const destroy = async (
     const result = await Posts.findByIdAndDelete(id)
 
     if(!result)
-      return response.status(404).send();;  
+      return response.status(404).send();  
+
+    return response.status(200).json({});
+  } catch (error) {
+  
+    return response.status(500).json(error);
+  }
+};
+
+/**
+ * Like post
+ */
+interface LikeRequestInterface extends Request {
+  body: {
+    session: {
+      id: string;
+    };
+  }
+  params: {
+    id: string;
+  },
+}
+const like = async (
+  request: LikeRequestInterface,
+  response: Response
+): Promise<Response> => {
+  
+  const { session } = request.body
+  const { id } = request.params
+
+  try {
+    const result = await Posts.findByIdAndUpdate({ _id: id }, { $push: { likes: session.id } })
+
+    if(!result)
+      return response.status(404).send();  
+
+    return response.status(200).json({});
+  } catch (error) {
+  
+    return response.status(500).json(error);
+  }
+};
+
+/**
+ * Unlike post
+ */
+ interface UnlikeRequestInterface extends Request {
+  body: {
+    session: {
+      id: string;
+    };
+  }
+  params: {
+    id: string;
+  },
+}
+const unlike = async (
+  request: UnlikeRequestInterface,
+  response: Response
+): Promise<Response> => {
+  
+  const { session } = request.body
+  const { id } = request.params
+
+  try {
+    const result = await Posts.findByIdAndUpdate({ _id: id }, { $pull: { likes: session.id } })
+
+    if(!result)
+      return response.status(404).send();  
 
     return response.status(200).json({});
   } catch (error) {
@@ -146,4 +233,6 @@ export default  {
   store,
   update,
   destroy,
+  like,
+  unlike,
 };

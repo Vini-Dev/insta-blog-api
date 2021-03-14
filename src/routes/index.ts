@@ -24,6 +24,9 @@ router.post('/posts', PostsController.store)
 router.put('/posts/:id', PostsController.update)
 router.delete('/posts/:id', PostsController.destroy)
 
+router.put('/posts/like/:id', PostsController.like)
+router.delete('/posts/like/:id', PostsController.unlike)
+
 router.get('/users/:id', UsersController.index)
 router.get('/users', UsersController.list)
 router.put('/users', UsersController.update)
