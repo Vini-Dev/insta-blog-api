@@ -13,7 +13,7 @@ export default async (req, res, next) => {
   
   const [, token] = authHeader.split(' ');
   try {
-    console.log(authHeader)
+    
     const tokenDecoded = await promisify(jwt.verify)(token, JWT_SESSION_KEY);
     
     if (!tokenDecoded) {

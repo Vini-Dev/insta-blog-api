@@ -3,7 +3,7 @@ import { UserModelInterface } from './Users'
 
 export interface PostModelInterface extends Document {
   description: string;
-  image: string;
+  image?: string;
   likes: Schema.Types.ObjectId[];
   created_at: string;
   created_by: UserModelInterface;

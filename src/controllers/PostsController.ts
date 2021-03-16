@@ -1,4 +1,5 @@
 import Posts from '../models/Posts';
+import fs from 'fs'
 import { Request, Response } from 'express';
 
 /**
@@ -73,8 +74,7 @@ interface StoreRequestInterface extends Request {
       created_by: string;
       updated_by: string;
     };
-    description: string,
-    image: string,
+    description: string,    
   },
 }
 
@@ -83,49 +83,16 @@ const store = async (
   response: Response
 ): Promise<Response> => {
   try {
-    const { session, description, image  } = request.body
+    const { session, description  } = request.body
     const { created_by, updated_by } = session
 
     const post = await Posts.create({
       description,
-      image,
       created_by,
       updated_by,
     })
     
     return response.status(201).json(post);
-  } catch (error) {
-    return response.status(500).json(error);
-  }
-};
-
-/**
- * Update post by id
- */
- interface UpdateRequestInterface extends Request {
-  params: {
-    id: string;
-  };
-  body: {
-    description: string,
-    image: string,
-  };
-}
-
-const update = async (
-  request: UpdateRequestInterface,
-  response: Response
-): Promise<Response> => {
-  try {
-    const { id } = request.params
-    const { description, image } = request.body
-
-    const post = await Posts.findByIdAndUpdate( id, {
-      description,
-      image,      
-    }, { new: true })
-    
-    return response.status(200).json(post);
   } catch (error) {
     return response.status(500).json(error);
   }
@@ -227,12 +194,49 @@ const unlike = async (
   }
 };
 
+
+/**
+ * Update avatar user
+ */
+ interface ImageUpdateRequestInterface extends Request {
+  params: {
+    id: string;
+  };
+  file: {
+    path: string;
+  };
+}
+const imageUpdate = async (
+  request: ImageUpdateRequestInterface,
+  response: Response
+): Promise<Response> => {
+  try {
+ 
+    const { params, file } = request;
+    const { id } = params;
+
+    const post = await Posts.findById(id)
+    if (post.image) {
+      fs.unlinkSync(post.image)
+    }
+
+    const updatedPost = await Posts.findByIdAndUpdate(id, {
+      image: file.path,      
+    }, { new: true })
+    
+    return response.status(200).json(updatedPost);
+  } catch (error) {    
+    console.log(error)
+    return response.status(500).json(error);
+  }
+};
+
 export default  {
   index,
   list,
   store,
-  update,
   destroy,
   like,
   unlike,
+  imageUpdate,
 };

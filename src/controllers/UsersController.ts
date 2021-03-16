@@ -1,6 +1,7 @@
 import Users from '../models/Users';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt'
+import fs from 'fs'
 import jwt from 'jsonwebtoken';
 
 const { JWT_SESSION_KEY, JWT_SESSION_LIFETIME } = process.env
@@ -184,10 +185,49 @@ const destroy = async (
   }
 };
 
+/**
+ * Update avatar user
+ */
+interface AvatarUpdateRequestInterface extends Request {
+  body: {
+    session: {
+      id: string;
+    },
+  };
+  file: {
+    path: string;
+  };
+}
+const avatarUpdate = async (
+  request: AvatarUpdateRequestInterface,
+  response: Response
+): Promise<Response> => {
+  try {
+ 
+    const { body, file } = request;
+    const { session } = body;
+
+    const user = await Users.findById(session.id)
+    if (user.avatar) {
+      fs.unlinkSync(user.avatar)
+    }
+
+    const updatedUser = await Users.findByIdAndUpdate(session.id, {
+      avatar: file.path,      
+    }, { new: true })
+    
+    return response.status(200).json(updatedUser);
+  } catch (error) {    
+    console.log(error)
+    return response.status(500).json(error);
+  }
+};
+
 export default  {
   index,
   list,
   store,
   update,
   destroy,
+  avatarUpdate,
 };
