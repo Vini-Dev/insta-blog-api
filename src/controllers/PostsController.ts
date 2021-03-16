@@ -2,6 +2,8 @@ import Posts from '../models/Posts';
 import fs from 'fs'
 import { Request, Response } from 'express';
 
+const { FILES_URL } = process.env
+
 /**
  * Return post by id
  */
@@ -18,10 +20,21 @@ const index = async (
   const { id } = request.params
 
   try {
-    const post = await Posts.findById(id).populate('created_by')
+    const row = await Posts.findById(id).populate('created_by')
 
-    if(!post)
+    if(!row) {
       return response.status(404).send();
+    }
+
+    const post = row.toObject()
+    
+    if(post.image) {
+      post['image_url'] = FILES_URL + "/" + post.image;
+    }
+
+    if(post.created_by?.avatar) {
+      post.created_by['avatar_url'] = FILES_URL + "/" + post.created_by.avatar;
+    }
 
     return response.status(200).json(post);
   } catch (error) {
@@ -57,7 +70,21 @@ const list = async (
       query['likes'] = session.id;
     }
 
-    const posts = await Posts.find(query).sort({ created_at: -1 }).populate('created_by')
+    const rows = await Posts.find(query).sort({ created_at: -1 }).populate('created_by')
+
+    const posts = rows.map(row => {
+      const post = row.toObject()
+
+      if(post.image) {
+        post['avatar_url'] = FILES_URL + "/" + post.image;
+      }
+      
+      if(post.created_by?.avatar) {
+        post.created_by['avatar_url'] = FILES_URL + "/" + post.created_by.avatar;
+      }
+      return post
+    })
+    
     
     return response.status(200).json(posts);
   } catch (error) {    
@@ -203,7 +230,7 @@ const unlike = async (
     id: string;
   };
   file: {
-    path: string;
+    filename: string;
   };
 }
 const imageUpdate = async (
@@ -211,7 +238,6 @@ const imageUpdate = async (
   response: Response
 ): Promise<Response> => {
   try {
- 
     const { params, file } = request;
     const { id } = params;
 
@@ -221,15 +247,17 @@ const imageUpdate = async (
     }
 
     const updatedPost = await Posts.findByIdAndUpdate(id, {
-      image: file.path,      
+      image: file.filename,      
     }, { new: true })
     
-    return response.status(200).json(updatedPost);
+    return response.status(200).json({
+      ...updatedPost
+    });
   } catch (error) {    
     console.log(error)
-    return response.status(500).json(error);
+    return response.status(500).json(error)
   }
-};
+}
 
 export default  {
   index,

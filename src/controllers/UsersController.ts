@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt'
 import fs from 'fs'
 import jwt from 'jsonwebtoken';
 
-const { JWT_SESSION_KEY, JWT_SESSION_LIFETIME } = process.env
+const { JWT_SESSION_KEY, JWT_SESSION_LIFETIME, FILES_URL } = process.env
 
 /**
  * Return post by id
@@ -24,7 +24,12 @@ const index = async (
   try {
     const { session } = request.body
 
-    const user = await Users.findById(session.id)
+    const row = await Users.findById(session.id)
+
+    const user = row.toObject()
+    if(user?.avatar) {
+      user['avatar_url'] = FILES_URL + "/" + user.avatar;
+    }
 
     return response.status(200).json(user);
   } catch (error) {
@@ -51,7 +56,19 @@ const list = async (
   try {
     const { session } = request.body;
 
-    const users = await Users.find({ _id: { $ne: session.id } })
+    const rows = await Users.find({
+      _id: { $ne: session.id }
+    })
+
+    const users = rows.map(row => {
+      const user = row.toObject()
+
+      if(user.avatar) {
+        user['avatar_url'] = FILES_URL + "/" + user.avatar;
+      }
+      return user
+    })
+    
     
     return response.status(200).json(users);
   } catch (error) {
@@ -195,7 +212,7 @@ interface AvatarUpdateRequestInterface extends Request {
     },
   };
   file: {
-    path: string;
+    filename: string;
   };
 }
 const avatarUpdate = async (
@@ -213,7 +230,7 @@ const avatarUpdate = async (
     }
 
     const updatedUser = await Users.findByIdAndUpdate(session.id, {
-      avatar: file.path,      
+      avatar: file.filename,      
     }, { new: true })
     
     return response.status(200).json(updatedUser);
