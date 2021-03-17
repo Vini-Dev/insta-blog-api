@@ -1,14 +1,15 @@
 import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
 import { promisify } from 'util';
 
 const { JWT_SESSION_KEY } = process.env
 
-export default async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+export default async (request: Request, response: Response, next: NextFunction) => {
+  const authHeader = request.headers.authorization;
 
   
   if (!authHeader) {
-    return res.status(400).json({ message: 'Token not provided' });
+    return response.status(400).json({ message: 'Token not provided' });
   }
   
   const [, token] = authHeader.split(' ');
@@ -17,11 +18,11 @@ export default async (req, res, next) => {
     const tokenDecoded = await promisify(jwt.verify)(token, JWT_SESSION_KEY);
     
     if (!tokenDecoded) {
-      return res.status(401).json({ message: 'Decoded token error' });
+      return response.status(401).json({ message: 'Decoded token error' });
     }
 
-    req.body = {
-      ...req.body,
+    request.body = {
+      ...request.body,
       session: {
         id: tokenDecoded.id,
         created_by: tokenDecoded.id,
@@ -31,6 +32,6 @@ export default async (req, res, next) => {
 
     return next();
   } catch (error) {
-    return res.status(401).json({ message: 'Token invalid' });
+    return response.status(401).json({ message: 'Token invalid' });
   }
 };
