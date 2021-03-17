@@ -13,7 +13,7 @@ import { Request, Response } from 'express';
   },
 }
 
-const { JWT_SESSION_KEY, JWT_SESSION_LIFETIME } = process.env
+const { JWT_SESSION_KEY, JWT_SESSION_LIFETIME, FILES_URL } = process.env
 
 const store = async (
   request: StoreRequestInterface,
@@ -42,6 +42,10 @@ const store = async (
     // Remove the password from user data
     const dataUser =  requestedUser.toObject()
     delete dataUser.password
+    
+    if(dataUser?.avatar) {
+      dataUser['avatar_url'] = FILES_URL + "/" + dataUser.avatar;
+    }
   
     return response.status(200).json({ token, user: dataUser });
   } catch (error) {

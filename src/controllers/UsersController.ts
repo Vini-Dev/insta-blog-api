@@ -161,10 +161,15 @@ const update = async (
   try {
     const { session, name, biography } = request.body
 
-    const user = await Users.findByIdAndUpdate(session.id, {
+    const row = await Users.findByIdAndUpdate(session.id, {
       name,      
       biography,      
     }, { new: true })
+
+    const user = row.toObject()
+    if(user?.avatar) {
+      user['avatar_url'] = FILES_URL + "/" + user.avatar;
+    }
     
     return response.status(200).json(user);
   } catch (error) {
@@ -224,16 +229,25 @@ const avatarUpdate = async (
     const { body, file } = request;
     const { session } = body;
 
-    const user = await Users.findById(session.id)
-    if (user.avatar) {
-      fs.unlinkSync(user.avatar)
+    const currentUser = await Users.findById(session.id)
+    if (currentUser.avatar) {
+      try {
+        fs.unlinkSync(currentUser.avatar)
+      } catch (error) {
+        console.log(error)
+      }
     }
-
+    
     const updatedUser = await Users.findByIdAndUpdate(session.id, {
       avatar: file.filename,      
     }, { new: true })
+
+    const user = updatedUser.toObject()
+    if(user?.avatar) {
+      user['avatar_url'] = FILES_URL + "/" + user.avatar;
+    }
     
-    return response.status(200).json(updatedUser);
+    return response.status(200).json(user);
   } catch (error) {    
     console.log(error)
     return response.status(500).json(error);

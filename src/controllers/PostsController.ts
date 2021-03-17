@@ -71,12 +71,12 @@ const list = async (
     }
 
     const rows = await Posts.find(query).sort({ created_at: -1 }).populate('created_by')
-
+    
     const posts = rows.map(row => {
       const post = row.toObject()
 
       if(post.image) {
-        post['avatar_url'] = FILES_URL + "/" + post.image;
+        post['image_url'] = FILES_URL + "/" + post.image;
       }
       
       if(post.created_by?.avatar) {
@@ -84,7 +84,6 @@ const list = async (
       }
       return post
     })
-    
     
     return response.status(200).json(posts);
   } catch (error) {    
@@ -121,6 +120,7 @@ const store = async (
     
     return response.status(201).json(post);
   } catch (error) {
+    console.log(error)
     return response.status(500).json(error);
   }
 };
@@ -237,9 +237,10 @@ const imageUpdate = async (
   request: ImageUpdateRequestInterface,
   response: Response
 ): Promise<Response> => {
+  const { params, file } = request;
+  const { id } = params;
+  
   try {
-    const { params, file } = request;
-    const { id } = params;
 
     const post = await Posts.findById(id)
     if (post.image) {
@@ -249,13 +250,15 @@ const imageUpdate = async (
     const updatedPost = await Posts.findByIdAndUpdate(id, {
       image: file.filename,      
     }, { new: true })
+    console.log(updatedPost)
     
-    return response.status(200).json({
-      ...updatedPost
-    });
+    return response.status(200).json(updatedPost);
   } catch (error) {    
-    console.log(error)
-    return response.status(500).json(error)
+    try {
+      await Posts.findByIdAndDelete(id)
+    } catch (error) {
+      return response.status(500).json(error)
+    }    
   }
 }
 

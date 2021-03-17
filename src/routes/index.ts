@@ -26,7 +26,7 @@ router.get('/posts', PostsController.list)
 router.post('/posts', PostsController.store)
 router.delete('/posts/:id', PostsController.destroy)
 // Repass auth middleware to get id from token
-router.post('/posts/:id/image', multerMiddleware.single('image'), authMiddleware, PostsController.imageUpdate)
+router.put('/posts/:id/image', multerMiddleware.single('image'), authMiddleware, PostsController.imageUpdate)
 
 router.put('/posts/like/:id', PostsController.like)
 router.delete('/posts/like/:id', PostsController.unlike)
